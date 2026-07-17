@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no, viewport-fit=cover, user-scalable=no" />
+    <title>Bike Reading App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <style>
+        :root {
+            /* Default Theme (Ready to Ride) */
+            --bg-gradient-1: #1f1c2c;
+            --bg-gradient-2: #928dab;
+            --primary-accent: #f39c12;
+            --primary-accent-hover: #e67e22;
+            
+            --card-bg: rgba(30, 30, 30, 0.85);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-main: #FFFFFF;
+            --text-muted: #A0A0A0;
+            --text-primary: #EAEAEA;
+            --text-secondary: #A0A0A0;
+            --border-color: #333333;
+            
+            --success-color: #00B894;
+            --danger-color: #ff4757;
+            
+            --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        /* Morning Theme */
+        .theme-morning {
+            --bg-gradient-1: #FF4E50;
+            --bg-gradient-2: #F9D423;
+            --primary-accent: #FF9F43;
+            --primary-accent-hover: #ee5253;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --card-border: rgba(255, 255, 255, 0.5);
+            --text-main: #2d3436;
+            --text-muted: #636e72;
+            --shadow: 0 8px 32px 0 rgba(255, 78, 80, 0.2);
+        }
+
+        /* Evening Theme */
+        .theme-evening {
+            --bg-gradient-1: #0F2027;
+            --bg-gradient-2: #2C5364;
+            --primary-accent: #6C5CE7;
+            --primary-accent-hover: #a29bfe;
+            --card-bg: rgba(20, 30, 48, 0.85);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-main: #FFFFFF;
+            --text-muted: #b2bec3;
+            --shadow: 0 8px 32px 0 rgba(108, 92, 231, 0.3);
+        }
+
+        /* Completed Theme */
+        .theme-complete {
+            --bg-gradient-1: #00b09b;
+            --bg-gradient-2: #96c93d;
+            --primary-accent: #00B894;
+            --primary-accent-hover: #00cec9;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --card-border: rgba(255, 255, 255, 0.5);
+            --text-main: #2d3436;
+            --text-muted: #636e72;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        html, body {
+            min-height: 100%; width: 100%; 
+            font-family: 'Poppins', sans-serif;
+            color: var(--text-main);
+            background: linear-gradient(135deg, var(--bg-gradient-1) 0%, var(--bg-gradient-2) 100%);
+            background-attachment: fixed;
+            transition: background 0.8s ease;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* SPA View Management */
+        #login-view, #dashboard-view {
+            display: none;
+            width: 100%;
+            height: 100%;
+            min-height: 100vh;
+        }
+
+        #login-view.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        #dashboard-view.active {
+            display: block;
+        }
+
+        /* --- LOGIN CSS --- */
+        .login-container {
+            width: 100%;
+            max-width: 100%;
+            padding: 2.5rem 1.5rem calc(2.5rem + var(--safe-bottom));
+            background: rgba(30, 30, 30, 0.85);
+            backdrop-filter: blur(15px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            animation: fadeIn 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+            box-shadow: var(--shadow);
+        }
+
+        @media (min-width: 480px) {
+            .login-container {
+                max-width: 420px;
+                padding: 3rem 2.5rem;
+            }
+        }
+
+        .app-icon {
+            width: 70px; height: 70px; margin: 0 auto 1.5rem;
+            background: rgba(243, 156, 18, 0.1); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            color: var(--primary-accent); font-size: 2rem;
+            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.2);
+        }
+
+        .login-header { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .login-subheader { margin-bottom: 2rem; color: var(--text-secondary); font-size: 0.95rem; }
+        
+        .form-group { margin-bottom: 1.5rem; text-align: left; position: relative; }
+        .form-control, .form-control-file {
+            width: 100%; padding: 1.1rem; background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color); border-radius: 16px;
+            font-size: 1.05rem; font-family: inherit; color: var(--text-main);
+            transition: all 0.25s; outline: none; -webkit-appearance: none;
+        }
+        .form-control::placeholder { color: var(--text-secondary); }
+        .form-control:focus {
+            border-color: var(--primary-accent);
+            background: rgba(243, 156, 18, 0.05);
+            box-shadow: 0 0 0 4px rgba(243, 156, 18, 0.1);
+        }
+
+        /* Custom Dropdown Styles */
+        .custom-select-wrapper { position: relative; user-select: none; }
+        .custom-select { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .custom-select .placeholder { color: var(--text-secondary); }
+        .custom-select .selected-value { color: var(--text-main); }
+        .custom-select-icon { transition: transform 0.3s ease; color: var(--text-secondary); }
+        .custom-select-wrapper.open .custom-select-icon { transform: rotate(180deg); }
+        .custom-select-wrapper.open .custom-select { border-color: var(--primary-accent); border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+        .custom-options {
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: var(--card-bg); border: 1px solid var(--primary-accent); border-top: none;
+            border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; max-height: 250px;
+            overflow-y: auto; z-index: 100; display: none; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .custom-select-wrapper.open .custom-options { display: block; animation: slideDown 0.2s ease-out forwards; }
+        .custom-option {
+            padding: 1rem 1.1rem; display: flex; align-items: center; gap: 12px;
+            cursor: pointer; border-bottom: 1px solid var(--border-color); transition: background 0.2s;
+        }
+        .custom-option:last-child { border-bottom: none; }
+        .custom-option:hover { background: rgba(243, 156, 18, 0.1); }
+        .option-avatar {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-accent), var(--primary-accent-hover));
+            display: flex; justify-content: center; align-items: center;
+            font-size: 0.8rem; font-weight: 700; color: #fff;
+        }
+
+        .btn-login, .btn-submit {
+            width: 100%; padding: 1.1rem; font-size: 1.1rem; font-weight: 600;
+            color: #fff; background: linear-gradient(135deg, var(--primary-accent), var(--primary-accent-hover));
+            border: none; border-radius: 16px; cursor: pointer; transition: all 0.3s ease;
+            margin-top: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: flex; justify-content: center; align-items: center; gap: 10px;
+        }
+        .btn-login:hover:not(:disabled), .btn-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+        .btn-login:disabled, .btn-submit:disabled { background: #8395a7; cursor: not-allowed; box-shadow: none; color: #ccc;}
+        .btn-login { display: none; }
+        .btn-login.show { display: flex; }
+
+        #error-message {
+            color: var(--danger-color); margin-top: 1.2rem; font-weight: 500; font-size: 0.9rem;
+            display: none; background: rgba(229, 57, 53, 0.1); padding: 0.8rem; border-radius: 8px; text-align: left;
+        }
+        
+        .auto-submit-progress {
+            height: 4px; background: var(--primary-accent); width: 0%;
+            border-radius: 4px; margin-top: 10px; transition: width 0.3s ease; display: none;
+        }
+
+        /* --- DASHBOARD CSS --- */
+        .page-container {
+            display: flex; flex-direction: column; gap: 1.5rem;
+            padding: 1.5rem 1rem calc(2rem + var(--safe-bottom)) 1rem;
+            max-width: 1200px; margin: 0 auto;
+        }
+        .hero-section { text-align: center; padding: 1rem 0; animation: fadeInDown 0.6s ease-out; }
+        .hero-icon { font-size: 3rem; color: var(--primary-accent); margin-bottom: 0.5rem; transition: color 0.5s ease; text-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .hero-title { font-size: 1.8rem; font-weight: 700; letter-spacing: 0.5px; }
+        .hero-subtitle { font-size: 0.95rem; color: var(--text-muted); }
+
+        .card {
+            background: var(--card-bg); backdrop-filter: blur(15px);
+            border-radius: 24px; border: 1px solid var(--card-border);
+            box-shadow: var(--shadow); padding: 1.5rem; transition: all 0.5s ease;
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+        .card-title { font-size: 1.2rem; font-weight: 600; margin-bottom: 1.2rem; display: flex; align-items: center; gap: 10px; color: var(--text-main); }
+        
+        label { font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; display: block; color: var(--text-muted); }
+        .theme-morning .form-control, .theme-complete .form-control { background: rgba(255, 255, 255, 0.5); }
+        .form-control[readonly] { opacity: 0.8; pointer-events: none; }
+
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .btn-timeType {
+            padding: 1rem; background: rgba(0, 0, 0, 0.1); border: 1px solid var(--card-border);
+            color: var(--text-main); border-radius: 16px; cursor: pointer;
+            transition: all 0.3s ease; font-weight: 600; font-size: 1rem;
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+        }
+        .theme-morning .btn-timeType, .theme-complete .btn-timeType { background: rgba(255,255,255,0.5); }
+        .btn-timeType i { font-size: 1.5rem; }
+        .btn-timeType.active {
+            background: linear-gradient(135deg, var(--primary-accent), var(--primary-accent-hover));
+            color: #fff; border-color: transparent; box-shadow: 0 8px 20px rgba(0,0,0,0.2); transform: translateY(-2px);
+        }
+        .btn-timeType:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        .location-display {
+            background: rgba(0, 0, 0, 0.1); padding: 1rem; border-radius: 14px;
+            font-size: 0.9rem; color: var(--text-main); display: flex; align-items: center; gap: 10px;
+        }
+        .theme-morning .location-display, .theme-complete .location-display { background: rgba(255,255,255,0.5); }
+
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .summary-item { text-align: center; padding: 1rem; background: rgba(0,0,0,0.05); border-radius: 16px; }
+        .summary-label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px; }
+        .summary-value { font-size: 1.6rem; font-weight: 700; color: var(--text-main); }
+        .summary-total {
+            margin-top: 1rem; padding: 1.2rem; background: linear-gradient(135deg, var(--primary-accent), var(--primary-accent-hover));
+            border-radius: 16px; display: flex; justify-content: space-between; align-items: center; color: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .summary-total .summary-label { color: rgba(255,255,255,0.9); margin: 0; }
+        .summary-total .summary-value { color: #fff; font-size: 1.8rem; }
+
+        .scorecard-summary-list { display: flex; overflow-x: auto; gap: 1rem; padding-bottom: 0.5rem; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+        .scorecard-summary-list::-webkit-scrollbar { display: none; }
+        .summary-list-item { flex: 0 0 auto; width: 140px; padding: 1rem; background: rgba(0,0,0,0.05); border-radius: 16px; display: flex; flex-direction: column; gap: 5px; }
+        .theme-morning .summary-list-item, .theme-complete .summary-list-item { background: rgba(255,255,255,0.5); }
+        .summary-list-date { font-weight: 700; font-size: 1.1rem; border-bottom: 1px solid var(--card-border); padding-bottom: 5px; margin-bottom: 5px;}
+        .summary-list-value { font-size: 0.9rem; color: var(--text-muted); }
+        .summary-list-total { font-weight: 700; color: var(--primary-accent); margin-top: 5px;}
+
+        .scorecard-total-display { text-align: center; margin-bottom: 1.5rem; }
+        .scorecard-total-display .val { font-size: 3.5rem; font-weight: 800; color: var(--primary-accent); line-height: 1; }
+        .scorecard-total-display .lbl { font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+
+        @media (min-width: 768px) {
+            .page-container { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
+            .hero-section { width: 100%; }
+            .main-content { flex: 1; min-width: 350px; }
+            .side-content { flex: 1; min-width: 350px; display: flex; flex-direction: column; gap: 1.5rem; }
+            .scorecard-summary-list { flex-direction: column; overflow-y: auto; max-height: 300px; }
+            .summary-list-item { width: 100%; flex-direction: row; justify-content: space-between; align-items: center; }
+            .summary-list-date { border-bottom: none; padding: 0; margin: 0; }
+        }
+
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .hidden { display: none !important; }
+
+        /* Loader and Toast */
+        .loader-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+            display: none; justify-content: center; align-items: center; z-index: 1000;
+            flex-direction: column; gap: 15px;
+        }
+        .loader {
+            width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.1);
+            border-top: 4px solid var(--primary-accent); border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .loader-text {
+            color: var(--primary-accent); font-weight: 600; font-size: 1.1rem;
+            letter-spacing: 1px; animation: pulse 1.5s infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-10px);} 75% {transform: translateX(10px);} }
+        
+        .toast {
+            position: fixed; bottom: calc(20px + var(--safe-bottom)); left: 50%; transform: translateX(-50%);
+            padding: 1rem 1.5rem; border-radius: 12px; color: #fff;
+            z-index: 2000; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            opacity: 0; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; align-items: center; gap: 10px; font-weight: 500; pointer-events: none;
+            width: max-content; max-width: 90vw;
+        }
+        .toast.show { opacity: 1; bottom: calc(30px + var(--safe-bottom)); }
+        .toast.success { background: var(--success-color); }
+        .toast.error { background: var(--danger-color); }
+
+        /* Logout button */
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .theme-morning .logout-btn, .theme-complete .logout-btn {
+            background: rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="theme-default">
+
+    <!-- LOGIN VIEW -->
+    <div id="login-view" class="active">
+        <div class="login-container" id="loginContainer">
+            <div class="app-icon"><i class="fa-solid fa-motorcycle"></i></div>
+            <h1 class="login-header">Bike Reading</h1>
+            <p class="login-subheader">Select your name and enter passcode</p>
+            
+            <form id="loginForm" autocomplete="off">
+                <div class="form-group">
+                    <input type="hidden" id="username" required>
+                    <div class="custom-select-wrapper" id="userDropdown">
+                        <div class="form-control custom-select">
+                            <span class="placeholder" id="dropdownDisplay">Select Your Name...</span>
+                            <i class="fa-solid fa-chevron-down custom-select-icon"></i>
+                        </div>
+                        <div class="custom-options" id="dropdownOptions">
+                            <div style="padding: 1rem; text-align: center; color: var(--text-secondary);">
+                                <i class="fa-solid fa-circle-notch fa-spin"></i> Loading...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <input type="tel" id="password" class="form-control" placeholder="Enter 4-Digit Passcode" required inputmode="numeric" pattern="[0-9]*" maxlength="10">
+                    <div class="auto-submit-progress" id="autoSubmitProgress"></div>
+                </div>
+                
+                <button type="submit" class="btn-login" id="loginButton">Login</button>
+                <div id="error-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- DASHBOARD VIEW -->
+    <div id="dashboard-view">
+        <button class="logout-btn" id="logoutBtn"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</button>
+        <div class="page-container">
+            <!-- Hero Banner -->
+            <div class="hero-section">
+                <div class="hero-icon" id="heroIcon"><i class="fa-solid fa-motorcycle"></i></div>
+                <h1 class="hero-title" id="heroTitle">Ready to Ride</h1>
+                <p class="hero-subtitle" id="heroSubtitle">Select your reading time to begin</p>
+            </div>
+
+            <!-- Left/Main Content -->
+            <div class="main-content" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <!-- Form Card -->
+                <div class="card form-card">
+                    <h2 class="card-title"><i class="fa-solid fa-pen-to-square"></i> New Entry</h2>
+                    <form id="readingForm" autocomplete="off">
+                        <div class="form-group">
+                            <label for="personName">Person Name</label>
+                            <input type="text" id="personName" class="form-control" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Time of Entry</label>
+                            <div class="btn-group" id="timeTypeContainer"></div>
+                        </div>
+                        <div class="form-group hidden" id="readingInputGroup">
+                            <label id="readingLabel"></label>
+                            <input type="number" id="readingValue" class="form-control" step="any" required inputmode="decimal">
+                        </div>
+                        <div class="form-group hidden" id="pictureGroup">
+                            <label for="picture">Odometer Picture</label>
+                            <input type="file" id="picture" class="form-control-file" accept="image/*" capture="environment" required>
+                        </div>
+                        <div class="form-group hidden" id="locationGroup">
+                            <label>Current Location</label>
+                            <div id="location" class="location-display"><i class="fa-solid fa-location-crosshairs fa-spin"></i> Detecting...</div>
+                        </div>
+                        <button type="submit" class="btn-submit hidden" id="submitButton">
+                            <i class="fa-solid fa-paper-plane"></i> Submit Reading
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Today's Summary Card -->
+                <div class="card summary-card hidden" id="readingSummary">
+                    <h2 class="card-title"><i class="fa-solid fa-calendar-day"></i> Today's Readings</h2>
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <span class="summary-label">Morning <i class="fa-solid fa-sun"></i></span>
+                            <span class="summary-value" id="morningReadingValue">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Evening <i class="fa-solid fa-moon"></i></span>
+                            <span class="summary-value" id="eveningReadingValue">-</span>
+                        </div>
+                    </div>
+                    <div class="summary-total hidden" id="totalReadingSection">
+                        <span class="summary-label">Total KM Today</span>
+                        <span class="summary-value" id="totalReadingValue">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right/Side Content -->
+            <div class="side-content">
+                <!-- Scorecard -->
+                <div class="card scorecard hidden" id="scorecard">
+                    <h2 class="card-title"><i class="fa-solid fa-chart-line"></i> <span id="scorecardMonth"></span> Reading</h2>
+                    <div class="scorecard-total-display">
+                        <div class="val" id="scorecardTotal">0</div>
+                        <div class="lbl">Total Kilometers</div>
+                    </div>
+                    <div class="scorecard-summary-list" id="scorecardSummaryList"></div>
+                </div>
+                
+                <!-- Chart -->
+                <div class="card chart-container hidden" id="chartContainer">
+                    <h2 class="card-title"><i class="fa-solid fa-gauge-high"></i> Weekly Usage</h2>
+                    <div id="chart_div" style="width: 100%; height: 220px; display:flex; justify-content:center;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reused Elements -->
+    <div class="loader-overlay" id="loader">
+        <div class="loader"></div>
+        <div class="loader-text" id="loaderText">Loading...</div>
+    </div>
+    <div id="toast" class="toast"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>

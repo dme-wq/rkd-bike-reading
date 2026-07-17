@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, user-scalable=no, viewport-fit=cover" />
+    <title>Login - Bike Reading</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-dark: #121212;
+            --bg-card: #1E1E1E;
+            --primary-accent: #f39c12; /* Bike theme accent (orange/amber) */
+            --primary-accent-hover: #e67e22;
+            --text-primary: #EAEAEA;
+            --text-secondary: #A0A0A0;
+            --border-color: #333333;
+            --danger-color: #E53935;
+            --shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1f1c2c, #928dab); /* Road-like gradient */
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 100%;
+            padding: 2.5rem 1.5rem calc(2.5rem + var(--safe-area-bottom));
+            background: rgba(30, 30, 30, 0.85);
+            backdrop-filter: blur(15px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            animation: fadeIn 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+            box-shadow: var(--shadow);
+        }
+
+        @media (min-width: 480px) {
+            .login-container {
+                max-width: 420px;
+                padding: 3rem 2.5rem;
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .app-icon {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 1.5rem;
+            background: rgba(243, 156, 18, 0.1);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--primary-accent);
+            font-size: 2rem;
+            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.2);
+        }
+
+        .login-header {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-subheader {
+            margin-bottom: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+            position: relative;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 1.1rem;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            font-size: 1.05rem;
+            font-family: 'Poppins', sans-serif;
+            color: var(--text-primary);
+            transition: all 0.25s ease;
+            -webkit-appearance: none;
+            outline: none;
+        }
+        
+        .form-control::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-accent);
+            background: rgba(243, 156, 18, 0.05);
+            box-shadow: 0 0 0 4px rgba(243, 156, 18, 0.1);
+        }
+
+        /* Custom Dropdown Styles */
+        .custom-select-wrapper {
+            position: relative;
+            user-select: none;
+        }
+        
+        .custom-select {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .custom-select .placeholder {
+            color: var(--text-secondary);
+        }
+        
+        .custom-select .selected-value {
+            color: var(--text-primary);
+        }
+
+        .custom-select-icon {
+            transition: transform 0.3s ease;
+            color: var(--text-secondary);
+        }
+
+        .custom-select-wrapper.open .custom-select-icon {
+            transform: rotate(180deg);
+        }
+        
+        .custom-select-wrapper.open .custom-select {
+            border-color: var(--primary-accent);
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+
+        .custom-options {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--primary-accent);
+            border-top: none;
+            border-bottom-left-radius: 16px;
+            border-bottom-right-radius: 16px;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        .custom-select-wrapper.open .custom-options {
+            display: block;
+            animation: slideDown 0.2s ease-out forwards;
+        }
+        
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .custom-option {
+            padding: 1rem 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+            transition: background 0.2s;
+        }
+        
+        .custom-option:last-child {
+            border-bottom: none;
+        }
+
+        .custom-option:hover {
+            background: rgba(243, 156, 18, 0.1);
+        }
+
+        .option-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-accent), var(--primary-accent-hover));
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 1.1rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            background: linear-gradient(135deg, var(--primary-accent), var(--primary-accent-hover));
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+            margin-top: 1rem;
+            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
+        }
+
+        .btn-login:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(243, 156, 18, 0.4);
+        }
+
+        .btn-login:active:not(:disabled) {
+            transform: translateY(-1px);
+        }
+
+        .btn-login:disabled {
+            background: #555;
+            box-shadow: none;
+            cursor: not-allowed;
+            color: #888;
+        }
+
+        /* Hide button by default since we auto-submit */
+        .btn-login {
+            display: none; 
+        }
+        
+        .btn-login.show {
+            display: block;
+        }
+
+        #error-message {
+            color: var(--danger-color);
+            margin-top: 1.2rem;
+            font-weight: 500;
+            font-size: 0.9rem;
+            display: none;
+            background: rgba(229, 57, 53, 0.1);
+            padding: 0.8rem;
+            border-radius: 8px;
+        }
+
+        .loader-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none; justify-content: center; align-items: center; z-index: 1000;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .loader {
+            width: 50px; height: 50px;
+            border: 4px solid rgba(255,255,255,0.1);
+            border-top-color: var(--primary-accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        .loader-text {
+            color: var(--primary-accent);
+            font-weight: 600;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        .auto-submit-progress {
+            height: 4px;
+            background: var(--primary-accent);
+            width: 0%;
+            border-radius: 4px;
+            margin-top: 10px;
+            transition: width 0.3s ease;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="app-icon">
+            <i class="fa-solid fa-motorcycle"></i>
+        </div>
+        <h1 class="login-header">Bike Reading</h1>
+        <p class="login-subheader">Select your name and enter passcode</p>
+        
+        <form id="loginForm" autocomplete="off">
+            <div class="form-group">
+                <input type="hidden" id="username" required>
+                <div class="custom-select-wrapper" id="userDropdown">
+                    <div class="form-control custom-select">
+                        <span class="placeholder" id="dropdownDisplay">Select Your Name...</span>
+                        <i class="fa-solid fa-chevron-down custom-select-icon"></i>
+                    </div>
+                    <div class="custom-options" id="dropdownOptions">
+                        <div style="padding: 1rem; text-align: center; color: var(--text-secondary);">
+                            <i class="fa-solid fa-circle-notch fa-spin"></i> Loading...
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <input type="tel" id="password" class="form-control" placeholder="Enter 4-Digit Passcode" required inputmode="numeric" pattern="[0-9]*" maxlength="10">
+                <div class="auto-submit-progress" id="autoSubmitProgress"></div>
+            </div>
+            
+            <button type="submit" class="btn-login" id="loginButton">Login</button>
+            <div id="error-message"></div>
+        </form>
+    </div>
+
+    <div class="loader-overlay" id="loader">
+        <div class="loader"></div>
+        <div class="loader-text">Loading...</div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const loginForm = document.getElementById('loginForm');
+            const errorMessage = document.getElementById('error-message');
+            const loader = document.getElementById('loader');
+            const loaderText = document.querySelector('.loader-text');
+            const loginButton = document.getElementById('loginButton');
+            const loginContainer = document.querySelector('.login-container');
+            const autoSubmitProgress = document.getElementById('autoSubmitProgress');
+            
+            const userDropdown = document.getElementById('userDropdown');
+            const dropdownDisplay = document.getElementById('dropdownDisplay');
+            const dropdownOptions = document.getElementById('dropdownOptions');
+
+            function showLoader(show, text = 'Loading...') {
+                loaderText.textContent = text;
+                loader.style.display = show ? 'flex' : 'none';
+            }
+
+            function showError(message) {
+                errorMessage.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${message}`;
+                errorMessage.style.display = 'block';
+                loginContainer.style.animation = 'none';
+                loginContainer.offsetHeight;
+                loginContainer.style.animation = 'shake 0.4s ease-in-out';
+            }
+            
+            const style = document.createElement('style');
+            style.innerHTML = `@keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-10px);} 75% {transform: translateX(10px);} }`;
+            document.head.appendChild(style);
+
+            function setupDropdown(usernames) {
+                dropdownOptions.innerHTML = '';
+                
+                if (!usernames || usernames.length === 0) {
+                    dropdownOptions.innerHTML = '<div style="padding:1rem;text-align:center;">No users found.</div>';
+                    return;
+                }
+
+                usernames.forEach(user => {
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'custom-option';
+                    
+                    const parts = user.split('|')[0].trim().split(' ');
+                    const initials = parts.length > 1 ? (parts[0][0] + parts[1][0]) : user.substring(0, 2);
+                    
+                    optionDiv.innerHTML = `
+                        <div class="option-avatar">${initials.toUpperCase()}</div>
+                        <div class="option-name">${user}</div>
+                    `;
+                    
+                    optionDiv.addEventListener('click', () => {
+                        usernameInput.value = user;
+                        dropdownDisplay.textContent = user;
+                        dropdownDisplay.classList.add('selected-value');
+                        dropdownDisplay.classList.remove('placeholder');
+                        userDropdown.classList.remove('open');
+                        errorMessage.style.display = 'none';
+                        
+                        setTimeout(() => passwordInput.focus(), 100);
+                    });
+                    
+                    dropdownOptions.appendChild(optionDiv);
+                });
+
+                userDropdown.querySelector('.custom-select').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    userDropdown.classList.toggle('open');
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (!userDropdown.contains(e.target)) {
+                        userDropdown.classList.remove('open');
+                    }
+                });
+            }
+
+            const loggedInUser = sessionStorage.getItem('loggedInUser');
+            if (loggedInUser) {
+                loginContainer.style.display = 'none';
+                showLoader(true, 'Restoring session...');
+                google.script.run
+                    .withSuccessHandler(function(formHtml) {
+                        document.open();
+                        document.write(formHtml);
+                        document.close();
+                    })
+                    .withFailureHandler(function(err) {
+                        sessionStorage.removeItem('loggedInUser');
+                        showError("Session expired. Please log in again.");
+                        loginContainer.style.display = 'block';
+                        showLoader(false);
+                        fetchUsernames();
+                    })
+                    .getFormHtml(loggedInUser);
+                return;
+            }
+
+            function fetchUsernames() {
+                google.script.run
+                    .withSuccessHandler(function(usernames) {
+                        setupDropdown(usernames);
+                    })
+                    .withFailureHandler(function(err) {
+                        dropdownOptions.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--danger-color);">Error loading users</div>';
+                        showError("Failed to fetch user list.");
+                    })
+                    .getUsernames();
+            }
+            
+            fetchUsernames();
+
+            let autoSubmitTimer;
+            passwordInput.addEventListener('input', function(e) {
+                errorMessage.style.display = 'none';
+                const val = this.value.trim();
+                
+                if (val.length >= 4) {
+                    autoSubmitProgress.style.display = 'block';
+                    autoSubmitProgress.style.width = '100%';
+                    
+                    clearTimeout(autoSubmitTimer);
+                    autoSubmitTimer = setTimeout(() => {
+                        if (usernameInput.value) {
+                            passwordInput.blur();
+                            triggerLogin();
+                        } else {
+                            showError("Please select your name first");
+                            autoSubmitProgress.style.display = 'none';
+                            autoSubmitProgress.style.width = '0%';
+                        }
+                    }, 400);
+                } else {
+                    clearTimeout(autoSubmitTimer);
+                    autoSubmitProgress.style.display = 'none';
+                    autoSubmitProgress.style.width = '0%';
+                    
+                    if (val.length >= 5) {
+                        loginButton.classList.add('show');
+                    } else {
+                        loginButton.classList.remove('show');
+                    }
+                }
+            });
+
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                clearTimeout(autoSubmitTimer);
+                triggerLogin();
+            });
+
+            function triggerLogin() {
+                errorMessage.style.display = 'none';
+                const selectedUsername = usernameInput.value;
+                const password = passwordInput.value;
+
+                if (!selectedUsername) {
+                    showError('Please select your name.');
+                    return;
+                }
+                if (!password) {
+                    showError('Please enter your passcode.');
+                    return;
+                }
+                
+                showLoader(true, 'Authenticating...');
+                loginButton.disabled = true;
+
+                google.script.run
+                    .withSuccessHandler(function(response) {
+                        if (response.status === 'success') {
+                            showLoader(true, 'Loading Dashboard...');
+                            sessionStorage.setItem('loggedInUser', selectedUsername);
+                            google.script.run
+                                .withSuccessHandler(function(formHtml) {
+                                    document.open();
+                                    document.write(formHtml);
+                                    document.close();
+                                })
+                                .getFormHtml(selectedUsername);
+                        } else {
+                            showLoader(false);
+                            loginButton.disabled = false;
+                            autoSubmitProgress.style.display = 'none';
+                            autoSubmitProgress.style.width = '0%';
+                            passwordInput.value = '';
+                            passwordInput.focus();
+                            showError(response.message);
+                        }
+                    })
+                    .withFailureHandler(function(err) {
+                        showLoader(false);
+                        loginButton.disabled = false;
+                        autoSubmitProgress.style.display = 'none';
+                        autoSubmitProgress.style.width = '0%';
+                        showError('An unexpected error occurred.');
+                    })
+                    .authenticateUser(selectedUsername, password);
+            }
+        });
+    </script>
+</body>
+</html>
