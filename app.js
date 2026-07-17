@@ -7,7 +7,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbznaE1S4pOJjNYLdqKezHqH
 // ==========================================
 // STATE & UI ELEMENTS
 // ==========================================
-let currentUsername = sessionStorage.getItem('loggedInUser');
+let currentUsername = localStorage.getItem('loggedInUser');
 let locationText = '';
 let selectedTimeType = '';
 
@@ -202,13 +202,14 @@ document.addEventListener('DOMContentLoaded', function() {
         loginButton.disabled = true;
 
         try {
-            await apiRequest('authenticateUser', { username, password });
-            sessionStorage.setItem('loggedInUser', username);
+            const result = await apiRequest('authenticateUser', { username, password });
+            localStorage.setItem('loggedInUser', username);
             currentUsername = username;
             
-            showLoader(true, 'Loading Dashboard...');
-            await loadDashboardData();
+            // Instantly load data from the combined API response
             switchView('dashboard');
+            onInitialData(result.initData);
+            getLocation();
         } catch (error) {
             showLoader(false);
             loginButton.disabled = false;
@@ -221,7 +222,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     logoutBtn.addEventListener('click', () => {
-        sessionStorage.removeItem('loggedInUser');
+        localStorage.removeItem('loggedInUser');
         currentUsername = null;
         switchView('login');
         passwordInput.value = '';
@@ -497,7 +498,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // ==========================================
     if (currentUsername) {
         switchView('dashboard');
-        showLoader(true, 'Restoring session...');
+        // Show non-blocking skeleton loader in the container
+        document.getElementById('timeTypeContainer').innerHTML = '<div style="grid-column: span 2; text-align:center; padding: 1.5rem; border-radius:12px; background: rgba(0,0,0,0.05); color: var(--text-muted);"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading Data...</div>';
         loadDashboardData();
     } else {
         switchView('login');

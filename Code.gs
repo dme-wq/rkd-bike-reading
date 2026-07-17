@@ -84,7 +84,8 @@ function authenticateUser(username, password) {
     const data = sheet.getDataRange().getValues();
     for (let i = 1; i < data.length; i++) {
       if (data[i][0] === username && data[i][1].toString() === password.toString()) {
-        return { status: 'success' };
+        const initData = getInitializationData(username);
+        return { status: 'success', initData: initData };
       }
     }
     return { status: 'error', message: 'Invalid username or password.' };
