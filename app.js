@@ -2,7 +2,7 @@
 // CONFIGURATION
 // ==========================================
 // IMPORTANT: Replace this with your newly deployed Google Apps Script Web App URL
-const API_URL = "YOUR_GOOGLE_SCRIPT_WEB_APP_URL";
+const API_URL = "https://script.google.com/macros/s/AKfycbwPbbZUFeVznHWNCC2lNT28rlbz2IuAZrK-FQv7IkF1vW7Qv56KYMbBidtYNw0cYStM2g/exec";
 
 // ==========================================
 // STATE & UI ELEMENTS
