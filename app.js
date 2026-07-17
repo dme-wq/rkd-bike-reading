@@ -111,12 +111,39 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function fetchUsernames() {
-        try {
-            const result = await apiRequest('getUsernames');
-            setupDropdown(result.data);
-        } catch (error) {
-            dropdownOptions.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--danger-color);">Error loading users</div>';
-            showError("Failed to fetch user list: " + error.message);
+        const cachedUsers = localStorage.getItem('cachedUsernames');
+        
+        if (cachedUsers) {
+            // Instantly load from cache
+            setupDropdown(JSON.parse(cachedUsers));
+            
+            // Silently update cache in background for next time
+            apiRequest('getUsernames').then(result => {
+                if (result.status === 'success' && result.data) {
+                    localStorage.setItem('cachedUsernames', JSON.stringify(result.data));
+                    // Re-setup dropdown only if user hasn't selected anything yet to prevent interrupting their flow
+                    if (!usernameInput.value) {
+                        setupDropdown(result.data);
+                    }
+                }
+            }).catch(console.error);
+        } else {
+            // No cache exists, show loading modal
+            showLoader(true, 'Loading Users...');
+            try {
+                const result = await apiRequest('getUsernames');
+                if (result.status === 'success' && result.data) {
+                    localStorage.setItem('cachedUsernames', JSON.stringify(result.data));
+                    setupDropdown(result.data);
+                } else {
+                    throw new Error("Invalid user data received");
+                }
+            } catch (error) {
+                dropdownOptions.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--danger-color);">Error loading users</div>';
+                showError("Failed to fetch user list: " + error.message);
+            } finally {
+                showLoader(false);
+            }
         }
     }
 
