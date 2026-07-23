@@ -49,11 +49,18 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Picture Elements
     const pictureInput = document.getElementById('picture');
+    const openCameraBtn = document.getElementById('openCameraBtn');
+    const openGalleryBtn = document.getElementById('openGalleryBtn');
+    const cameraModal = document.getElementById('cameraModal');
+    const closeCameraBtn = document.getElementById('closeCameraBtn');
+    const cameraVideo = document.getElementById('cameraVideo');
+    const captureSnapBtn = document.getElementById('captureSnapBtn');
     const pictureStatus = document.getElementById('pictureStatus');
     const imagePreviewContainer = document.getElementById('imagePreviewContainer');
     const imagePreview = document.getElementById('imagePreview');
     const removeImageBtn = document.getElementById('removeImageBtn');
     const imageSizeBadge = document.getElementById('imageSizeBadge');
+    let mediaStream = null;
     
     const body = document.body;
     const heroIcon = document.getElementById('heroIcon');
@@ -370,12 +377,102 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    function resetPictureSelection() {
-        compressedImageData = null;
-        if (pictureInput) {
-            pictureInput.value = '';
-            pictureInput.classList.remove('hidden');
+    async function startCamera() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showToast('Live camera is not supported on this browser. Please use gallery.', 'error');
+            if (openGalleryBtn) openGalleryBtn.click();
+            return;
         }
+
+        try {
+            if (cameraModal) cameraModal.classList.remove('hidden');
+            let constraints = { video: { facingMode: { exact: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } } };
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+            } catch (e1) {
+                mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            }
+            if (cameraVideo) {
+                cameraVideo.srcObject = mediaStream;
+                await cameraVideo.play();
+            }
+        } catch (err) {
+            console.error("Camera access error:", err);
+            stopCamera();
+            showToast('Unable to access camera. Please choose photo from gallery.', 'error');
+            if (openGalleryBtn) openGalleryBtn.click();
+        }
+    }
+
+    function stopCamera() {
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(track => track.stop());
+            mediaStream = null;
+        }
+        if (cameraVideo) cameraVideo.srcObject = null;
+        if (cameraModal) cameraModal.classList.add('hidden');
+    }
+
+    if (openCameraBtn) openCameraBtn.addEventListener('click', startCamera);
+    if (closeCameraBtn) closeCameraBtn.addEventListener('click', stopCamera);
+    if (openGalleryBtn) openGalleryBtn.addEventListener('click', () => { if (pictureInput) pictureInput.click(); });
+
+    if (captureSnapBtn) {
+        captureSnapBtn.addEventListener('click', function() {
+            if (!cameraVideo || !cameraVideo.videoWidth) {
+                showToast('Camera initializing... Please wait a moment.', 'error');
+                return;
+            }
+            
+            const canvas = document.createElement('canvas');
+            let w = cameraVideo.videoWidth || 800;
+            let h = cameraVideo.videoHeight || 600;
+            const MAX_DIM = 800;
+            if (w > MAX_DIM || h > MAX_DIM) {
+                if (w > h) { h = Math.round((h * MAX_DIM) / w); w = MAX_DIM; }
+                else { w = Math.round((w * MAX_DIM) / h); h = MAX_DIM; }
+            }
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(cameraVideo, 0, 0, w, h);
+            
+            try {
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                const base64Data = dataUrl.split(',')[1];
+                compressedImageData = {
+                    data: base64Data,
+                    type: 'image/jpeg',
+                    name: 'odometer_' + Date.now() + '.jpg'
+                };
+                
+                if (imagePreview) imagePreview.src = `data:image/jpeg;base64,${base64Data}`;
+                if (imageSizeBadge) {
+                    const approxKb = Math.round((base64Data.length * 0.75) / 1024);
+                    imageSizeBadge.textContent = `Optimized: ~${approxKb} KB`;
+                }
+                
+                stopCamera();
+                
+                if (imagePreviewContainer) imagePreviewContainer.classList.remove('hidden');
+                if (openCameraBtn) openCameraBtn.classList.add('hidden');
+                if (openGalleryBtn) openGalleryBtn.classList.add('hidden');
+                showToast('Photo captured!', 'success');
+            } catch (err) {
+                console.error("Snap error:", err);
+                showToast('Failed to capture photo. Please try again.', 'error');
+            }
+        });
+    }
+
+    function resetPictureSelection() {
+        stopCamera();
+        compressedImageData = null;
+        if (pictureInput) pictureInput.value = '';
+        if (openCameraBtn) openCameraBtn.classList.remove('hidden');
+        if (openGalleryBtn) openGalleryBtn.classList.remove('hidden');
         if (imagePreviewContainer) imagePreviewContainer.classList.add('hidden');
         if (imagePreview) imagePreview.src = '';
     }
@@ -403,7 +500,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     imageSizeBadge.textContent = `Optimized: ~${approxKb} KB`;
                 }
                 if (imagePreviewContainer) imagePreviewContainer.classList.remove('hidden');
-                pictureInput.classList.add('hidden');
+                if (openCameraBtn) openCameraBtn.classList.add('hidden');
+                if (openGalleryBtn) openGalleryBtn.classList.add('hidden');
             } catch (err) {
                 console.error("Compression error:", err);
                 showToast('Failed to process picture. Please try taking photo again.', 'error');
