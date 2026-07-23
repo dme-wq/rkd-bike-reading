@@ -248,13 +248,17 @@ function getMonthlySummary(fullUsername, readingsData) {
 function processSubmission(formObject, imageFile) {
   try {
     // 1. Upload Picture (with fallback for Google Drive limits)
-    let pictureUrl = "Upload Failed";
+    let pictureUrl = "No Picture Uploaded";
     try {
-      const decodedData = Utilities.base64Decode(imageFile.data);
-      const blob = Utilities.newBlob(decodedData, imageFile.type, imageFile.name);
-      const folder = DriveApp.getFolderById(FOLDER_ID);
-      const file = folder.createFile(blob);
-      pictureUrl = file.getUrl();
+      if (imageFile && imageFile.data) {
+        const decodedData = Utilities.base64Decode(imageFile.data);
+        const mimeType = imageFile.type || 'image/jpeg';
+        const fileName = imageFile.name || 'odometer.jpg';
+        const blob = Utilities.newBlob(decodedData, mimeType, fileName);
+        const folder = DriveApp.getFolderById(FOLDER_ID);
+        const file = folder.createFile(blob);
+        pictureUrl = file.getUrl();
+      }
     } catch (uploadError) {
       Logger.log("Google Drive Upload Error: " + uploadError.toString());
       pictureUrl = "Error: Limit Exceeded/Drive Full";

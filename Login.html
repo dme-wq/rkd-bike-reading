@@ -423,7 +423,7 @@
                 });
             }
 
-            const loggedInUser = sessionStorage.getItem('loggedInUser');
+            const loggedInUser = localStorage.getItem('loggedInUser');
             if (loggedInUser) {
                 loginContainer.style.display = 'none';
                 showLoader(true, 'Restoring session...');
@@ -434,7 +434,7 @@
                         document.close();
                     })
                     .withFailureHandler(function(err) {
-                        sessionStorage.removeItem('loggedInUser');
+                        localStorage.removeItem('loggedInUser');
                         showError("Session expired. Please log in again.");
                         loginContainer.style.display = 'block';
                         showLoader(false);
@@ -518,7 +518,7 @@
                     .withSuccessHandler(function(response) {
                         if (response.status === 'success') {
                             showLoader(true, 'Loading Dashboard...');
-                            sessionStorage.setItem('loggedInUser', selectedUsername);
+                            localStorage.setItem('loggedInUser', selectedUsername);
                             google.script.run
                                 .withSuccessHandler(function(formHtml) {
                                     document.open();

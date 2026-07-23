@@ -2,7 +2,7 @@
 // CONFIGURATION
 // ==========================================
 // IMPORTANT: Replace this with your newly deployed Google Apps Script Web App URL
-const API_URL = "https://script.google.com/macros/s/AKfycbznaE1S4pOJjNYLdqKezHqHWbBYzYkbJIyQN6F1-v2D1tUvX_uRD74aQJcPRLfMRWpisw/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwNB83lhq_U_LEfey7OyqUGcGoLKOiliIqv9IWiL4dBSFRTba9GXJ7nPogGDCe_wwaZvw/exec";
 
 // ==========================================
 // STATE & UI ELEMENTS
@@ -10,6 +10,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbznaE1S4pOJjNYLdqKezHqH
 let currentUsername = localStorage.getItem('loggedInUser');
 let locationText = '';
 let selectedTimeType = '';
+let compressedImageData = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     google.charts.load('current', {'packages':['gauge']});
@@ -45,6 +46,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const readingForm = document.getElementById('readingForm');
     const submitButton = document.getElementById('submitButton');
     const logoutBtn = document.getElementById('logoutBtn');
+    
+    // Picture Elements
+    const pictureInput = document.getElementById('picture');
+    const pictureStatus = document.getElementById('pictureStatus');
+    const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+    const imagePreview = document.getElementById('imagePreview');
+    const removeImageBtn = document.getElementById('removeImageBtn');
+    const imageSizeBadge = document.getElementById('imageSizeBadge');
     
     const body = document.body;
     const heroIcon = document.getElementById('heroIcon');
@@ -86,7 +95,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({ action: action, ...payload })
             });
-            const data = await response.json();
+            const text = await response.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (parseErr) {
+                console.error("Non-JSON API response:", text);
+                throw new Error("Server communication error. Please try again.");
+            }
             if (data.status === 'error') throw new Error(data.message);
             return data;
         } catch (error) {
@@ -354,6 +370,54 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    function resetPictureSelection() {
+        compressedImageData = null;
+        if (pictureInput) {
+            pictureInput.value = '';
+            pictureInput.classList.remove('hidden');
+        }
+        if (imagePreviewContainer) imagePreviewContainer.classList.add('hidden');
+        if (imagePreview) imagePreview.src = '';
+    }
+
+    if (pictureInput) {
+        pictureInput.addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                showToast('Please select a valid image file.', 'error');
+                pictureInput.value = '';
+                return;
+            }
+
+            if (pictureStatus) pictureStatus.style.display = 'block';
+
+            try {
+                compressedImageData = await compressImage(file);
+                if (imagePreview) {
+                    imagePreview.src = `data:${compressedImageData.type};base64,${compressedImageData.data}`;
+                }
+                if (imageSizeBadge) {
+                    const approxKb = Math.round((compressedImageData.data.length * 0.75) / 1024);
+                    imageSizeBadge.textContent = `Optimized: ~${approxKb} KB`;
+                }
+                if (imagePreviewContainer) imagePreviewContainer.classList.remove('hidden');
+                pictureInput.classList.add('hidden');
+            } catch (err) {
+                console.error("Compression error:", err);
+                showToast('Failed to process picture. Please try taking photo again.', 'error');
+                resetPictureSelection();
+            } finally {
+                if (pictureStatus) pictureStatus.style.display = 'none';
+            }
+        });
+    }
+
+    if (removeImageBtn) {
+        removeImageBtn.addEventListener('click', resetPictureSelection);
+    }
+
     function selectTimeType(type) {
         selectedTimeType = type;
         applyTheme(type);
@@ -364,28 +428,39 @@ document.addEventListener('DOMContentLoaded', function() {
         readingLabel.innerHTML = `<i class="fa-solid ${type === 'Morning' ? 'fa-sun' : 'fa-moon'}"></i> Enter ${type} Odometer Reading`;
         readingValue.placeholder = `0.0`;
         readingValue.value = '';
+        resetPictureSelection();
     }
 
     readingForm.addEventListener('submit', async function(e) {
         e.preventDefault();
-        const file = document.getElementById('picture').files[0];
-        if (!selectedTimeType || !readingValue.value || !file || !locationText || locationText.startsWith('Detecting')) {
-            return showToast('Please fill all fields and wait for location.', 'error');
+        if (!selectedTimeType) {
+            return showToast('Please select entry time (Morning/Evening).', 'error');
+        }
+        if (!readingValue.value) {
+            return showToast('Please enter odometer reading.', 'error');
+        }
+        if (!compressedImageData) {
+            return showToast('Please take or select an odometer picture.', 'error');
+        }
+        if (!locationText || locationText.startsWith('Detecting')) {
+            return showToast('Please wait for location detection to complete.', 'error');
         }
         
-        showLoader(true, 'Processing...');
+        showLoader(true, 'Submitting Reading...');
         submitButton.disabled = true;
         
         try {
-            const imageFile = await compressImage(file);
             const formObject = {
-                fullUsername: currentUsername, timeType: selectedTimeType,
-                reading: readingValue.value, location: locationText
+                fullUsername: currentUsername,
+                timeType: selectedTimeType,
+                reading: readingValue.value,
+                location: locationText
             };
 
-            const response = await apiRequest('processSubmission', { formObject, imageFile });
-            showToast(response.message || "Success!", 'success');
+            const response = await apiRequest('processSubmission', { formObject, imageFile: compressedImageData });
+            showToast(response.message || "Submitted successfully!", 'success');
             readingForm.reset();
+            resetPictureSelection();
             personNameInput.value = currentUsername;
             readingInputGroup.classList.add('hidden');
             pictureGroup.classList.add('hidden');
@@ -401,28 +476,54 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function compressImage(file) {
         return new Promise((resolve, reject) => {
-            const MAX_WIDTH = 1024;
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = (event) => {
-                const img = new Image();
-                img.src = event.target.result;
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width, height = img.height;
-                    if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-                    canvas.width = width; canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    canvas.toBlob(blob => {
-                        const r = new FileReader();
-                        r.onload = () => resolve({ data: r.result.split(',')[1], type: blob.type, name: file.name });
-                        r.readAsDataURL(blob);
-                    }, 'image/jpeg', 0.7);
-                };
-                img.onerror = reject;
+            const MAX_DIM = 800; // Optimal 800px box size - high clarity for reading numbers, ultra low RAM & tiny payload (~50-80KB)
+            const blobUrl = URL.createObjectURL(file);
+            const img = new Image();
+            
+            img.onload = () => {
+                URL.revokeObjectURL(blobUrl); // Instantly free memory
+                
+                let width = img.width;
+                let height = img.height;
+                
+                if (width > MAX_DIM || height > MAX_DIM) {
+                    if (width > height) {
+                        height = Math.round((height * MAX_DIM) / width);
+                        width = MAX_DIM;
+                    } else {
+                        width = Math.round((width * MAX_DIM) / height);
+                        height = MAX_DIM;
+                    }
+                }
+                
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                try {
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                    const base64Data = dataUrl.split(',')[1];
+                    resolve({
+                        data: base64Data,
+                        type: 'image/jpeg',
+                        name: (file.name || 'picture').replace(/\.[^/.]+$/, "") + ".jpg"
+                    });
+                } catch (err) {
+                    reject(err);
+                }
             };
-            reader.onerror = reject;
+            
+            img.onerror = () => {
+                URL.revokeObjectURL(blobUrl);
+                reject(new Error("Failed to load picture file"));
+            };
+            
+            img.src = blobUrl;
         });
     }
 
@@ -458,8 +559,16 @@ document.addEventListener('DOMContentLoaded', function() {
             case error.TIMEOUT: message += "Location request timed out."; break;
             default: message += "An unknown error occurred."; break;
         }
-        locationEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${message}`;
+        locationEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${message} <span id="retryLocBtn" style="margin-left:8px; cursor:pointer; text-decoration:underline; font-weight:bold;"><i class="fa-solid fa-arrows-rotate"></i> Retry</span>`;
         locationText = message;
+        
+        const retryBtn = document.getElementById('retryLocBtn');
+        if (retryBtn) {
+            retryBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                getLocation();
+            });
+        }
     }
 
     // Chart & UI Update Functions
