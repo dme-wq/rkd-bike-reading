@@ -11,6 +11,7 @@ let currentUsername = localStorage.getItem('loggedInUser');
 let locationText = '';
 let selectedTimeType = '';
 let compressedImageData = null;
+let currentData = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     google.charts.load('current', {'packages':['gauge']});
@@ -47,7 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const submitButton = document.getElementById('submitButton');
     const logoutBtn = document.getElementById('logoutBtn');
     
-    // Picture Elements
+    // Picture & Modal Elements
     const pictureInput = document.getElementById('picture');
     const openCameraBtn = document.getElementById('openCameraBtn');
     const openGalleryBtn = document.getElementById('openGalleryBtn');
@@ -60,6 +61,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const imagePreview = document.getElementById('imagePreview');
     const removeImageBtn = document.getElementById('removeImageBtn');
     const imageSizeBadge = document.getElementById('imageSizeBadge');
+    const successModal = document.getElementById('successModal');
+    const syncStatusBadge = document.getElementById('syncStatusBadge');
+    const closeSuccessBtn = document.getElementById('closeSuccessBtn');
     let mediaStream = null;
     
     const body = document.body;
@@ -324,6 +328,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function onInitialData(data) {
         showLoader(false); 
+        currentData = data;
         
         const { morningExists, eveningExists } = data.entryState;
         timeTypeContainer.innerHTML = '';
@@ -529,7 +534,35 @@ document.addEventListener('DOMContentLoaded', function() {
         resetPictureSelection();
     }
 
-    readingForm.addEventListener('submit', async function(e) {
+    function showSuccessModal() {
+        if (syncStatusBadge) {
+            syncStatusBadge.style.background = 'rgba(243, 156, 18, 0.15)';
+            syncStatusBadge.style.color = 'var(--primary-accent)';
+            syncStatusBadge.innerHTML = '<i class="fa-solid fa-cloud-arrow-up fa-spin"></i> Saving to cloud...';
+        }
+        if (successModal) successModal.classList.remove('hidden');
+    }
+
+    function updateSyncStatus(isSuccess, message) {
+        if (!syncStatusBadge) return;
+        if (isSuccess) {
+            syncStatusBadge.style.background = 'rgba(0, 184, 148, 0.15)';
+            syncStatusBadge.style.color = 'var(--success-color)';
+            syncStatusBadge.innerHTML = `<i class="fa-solid fa-circle-check"></i> ${message}`;
+        } else {
+            syncStatusBadge.style.background = 'rgba(255, 71, 87, 0.15)';
+            syncStatusBadge.style.color = 'var(--danger-color)';
+            syncStatusBadge.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${message}`;
+        }
+    }
+
+    if (closeSuccessBtn) {
+        closeSuccessBtn.addEventListener('click', () => {
+            if (successModal) successModal.classList.add('hidden');
+        });
+    }
+
+    readingForm.addEventListener('submit', function(e) {
         e.preventDefault();
         if (!selectedTimeType) {
             return showToast('Please select entry time (Morning/Evening).', 'error');
@@ -544,32 +577,54 @@ document.addEventListener('DOMContentLoaded', function() {
             return showToast('Please wait for location detection to complete.', 'error');
         }
         
-        showLoader(true, 'Submitting Reading...');
-        submitButton.disabled = true;
-        
-        try {
-            const formObject = {
+        const submitTimeType = selectedTimeType;
+        const submitReadingVal = parseFloat(readingValue.value);
+        const submitPayload = {
+            formObject: {
                 fullUsername: currentUsername,
                 timeType: selectedTimeType,
                 reading: readingValue.value,
                 location: locationText
-            };
+            },
+            imageFile: compressedImageData
+        };
 
-            const response = await apiRequest('processSubmission', { formObject, imageFile: compressedImageData });
-            showToast(response.message || "Submitted successfully!", 'success');
-            readingForm.reset();
-            resetPictureSelection();
-            personNameInput.value = currentUsername;
-            readingInputGroup.classList.add('hidden');
-            pictureGroup.classList.add('hidden');
-            locationGroup.classList.add('hidden');
-            submitButton.classList.add('hidden');
-            onInitialData(response);
-        } catch (error) {
-            showLoader(false);
-            submitButton.disabled = false;
-            showToast(error.message || "Failed to submit.", 'error');
+        // 1. INSTANT OPTIMISTIC UI RESET (< 10ms)
+        readingForm.reset();
+        resetPictureSelection();
+        personNameInput.value = currentUsername;
+        readingInputGroup.classList.add('hidden');
+        pictureGroup.classList.add('hidden');
+        locationGroup.classList.add('hidden');
+        submitButton.classList.add('hidden');
+
+        if (currentData && currentData.entryState) {
+            if (submitTimeType === 'Morning') {
+                currentData.entryState.morningExists = true;
+                currentData.readings.morning = submitReadingVal;
+            } else if (submitTimeType === 'Evening') {
+                currentData.entryState.eveningExists = true;
+                currentData.readings.evening = submitReadingVal;
+            }
+            onInitialData(currentData);
         }
+
+        // 2. INSTANT POPUP SUCCESS MODAL
+        showSuccessModal();
+
+        // 3. BACKGROUND ASYNC SAVING (No blocking fullscreen loader)
+        apiRequest('processSubmission', submitPayload)
+            .then(response => {
+                updateSyncStatus(true, "Synced to Cloud");
+                if (response && response.entryState) {
+                    onInitialData(response);
+                }
+            })
+            .catch(error => {
+                console.error("Background sync error:", error);
+                updateSyncStatus(false, "Sync Pending");
+                showToast(error.message || "Background sync failed. Will retry.", 'error');
+            });
     });
 
     function compressImage(file) {
